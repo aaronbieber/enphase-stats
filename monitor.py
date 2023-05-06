@@ -20,7 +20,7 @@ class EnphaseClient():
     token_url = f'{base_url}/oauth/token'
     redirect_uri = f'{base_url}/oauth/redirect_uri'
 
-    def get_tokens(self) -> dict[str, str]:
+    def get_tokens(self):
         '''
         Retrieve tokens.
         '''
@@ -33,6 +33,11 @@ class EnphaseClient():
                             timeout=0.5)
 
         data = res.json()
+
+        if 'error_description' in data:
+            print('Request returned error:', data['error_description'])
+            return False
+
         return {'access': data['access_token'],
                 'refresh': data['refresh_token'],
                 'expire': int(time.time()) + data['expires_in']}
@@ -49,6 +54,11 @@ class EnphaseClient():
                             timeout=0.5)
 
         data = res.json()
+
+        if 'error_description' in data:
+            print('Request returned error:', data['error_description'])
+            return False
+
         return {'access': data['access_token'],
                 'refresh': data['refresh_token'],
                 'expire': int(time.time()) + data['expires_in']}
@@ -120,7 +130,7 @@ class TokenManager():
     '''
     Manage access tokens.
     '''
-    shelf = shelve.open('temp_data')
+    shelf = shelve.open('tokens')
 
     def __init__(self) -> None:
         result = self.load()
@@ -137,6 +147,10 @@ class TokenManager():
         if ('access' in self.shelf and
             'refresh' in self.shelf and
                 'expire' in self.shelf):
+
+            if self.shelf['expire'] <= int(time.time()):
+                self.refresh_tokens()
+
             return True
 
         return False
@@ -156,7 +170,9 @@ class TokenManager():
         print('Requesting a new set of tokens...')
         enphase = EnphaseClient()
         token_data = enphase.get_tokens()
-        self.save(token_data)
+
+        if token_data is not False:
+            self.save(token_data)
 
     def refresh_tokens(self):
         '''
@@ -164,7 +180,9 @@ class TokenManager():
         '''
         enphase = EnphaseClient()
         token_data = enphase.refresh_tokens(self.refresh())
-        self.save(token_data)
+
+        if token_data is not False:
+            self.save(token_data)
 
     def access(self) -> str:
         '''
@@ -212,8 +230,8 @@ def main():
         token_manager.access(), cache['last_interval'])
 
     if len(consumption_res) == 0 or len(production_res) == 0:
-       print("Couldn't retrieve (or didn't receive) meter data; aborting.")
-       sys.exit(1)
+        print("Couldn't retrieve (or didn't receive) meter data; aborting.")
+        sys.exit(1)
 
     cache['last_interval'] = consumption_res[-1]['end_at']
 
