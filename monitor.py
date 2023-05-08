@@ -2,6 +2,7 @@
 import sys
 import time
 from datetime import datetime
+import base64
 import shelve
 import requests
 import pytz
@@ -20,6 +21,13 @@ class EnphaseClient():
     token_url = f'{base_url}/oauth/token'
     redirect_uri = f'{base_url}/oauth/redirect_uri'
 
+    def client_code(self):
+        '''
+        Return the "code" used in token requests.
+        '''
+        return base64.b64encode(
+            (whisper.CLIENT_ID + ':' + whisper.CLIENT_SECRET).encode()).decode()
+
     def get_tokens(self):
         '''
         Retrieve tokens.
@@ -29,7 +37,7 @@ class EnphaseClient():
                                     'redirect_uri': self.redirect_uri,
                                     'code': whisper.AUTH_CODE},
                             headers={
-                                'Authorization': f'Basic {whisper.CLIENT_CODE}'},
+                                'Authorization': f'Basic {self.client_code()}'},
                             timeout=0.5)
 
         data = res.json()
@@ -50,7 +58,7 @@ class EnphaseClient():
                             params={'grant_type': 'refresh_token',
                                     'refresh_token': refresh_token},
                             headers={
-                                'Authorization': f'Basic {whisper.CLIENT_CODE}'},
+                                'Authorization': f'Basic {self.client_code()}'},
                             timeout=0.5)
 
         data = res.json()
