@@ -92,6 +92,10 @@ class EnphaseClient():
             print('Timed out while requesting consumption meter data:', ex)
             return []
 
+        if not 'intervals' in res.json():
+            print('Unexpected response format:', res.json())
+            return []
+
         intervals = []
         for interval in res.json()['intervals']:
             if interval['end_at'] > since:
@@ -121,6 +125,10 @@ class EnphaseClient():
                                timeout=0.5)
         except TimeoutError as ex:
             print('Timed out while requesting production meter data:', ex)
+            return []
+
+        if not 'intervals' in res.json():
+            print('Unexpected response format:', res.json())
             return []
 
         intervals = []
@@ -242,14 +250,6 @@ def main():
         sys.exit(1)
 
     cache['last_interval'] = consumption_res[-1]['end_at']
-
-    # net = production_res['wh'] - consumption_res['wh']
-    # import_export = 'export' if net > 0 else 'import'
-
-    # print(
-    #    f"Produced {production_res['wh']}W, consumed {consumption_res['wh']}W, net {import_export} of {abs(net)}W.")
-    # print(f"Total production: {production_res['total']}Wh")
-    # print(f"Total consumption: {consumption_res['total']}Wh")
 
     carbon = CarbonClient(config.CARBON_HOST, config.CARBON_PICKLE_PORT)
 
