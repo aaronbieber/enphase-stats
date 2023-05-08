@@ -1,3 +1,5 @@
 __pycache__
-temp_data
 request_cache
+tokens
+config.py
+whisper.py
