@@ -243,7 +243,7 @@ def main():
     # print(f"Total production: {production_res['total']}Wh")
     # print(f"Total consumption: {consumption_res['total']}Wh")
 
-    carbon = CarbonClient(config.STATS_HOST, config.CARBON_PICKLE_PORT)
+    carbon = CarbonClient(config.CARBON_HOST, config.CARBON_PICKLE_PORT)
 
     cons_stats = map(
         lambda s: ('solar.consumption', (s['end_at'], s['wh'])),
