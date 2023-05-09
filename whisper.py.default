@@ -1,0 +1,10 @@
+'''
+These are the secret values used in API requests. DO NOT commit these to your
+repository or share them with anyone! Consult the README for instructions on
+how to populate these values.
+'''
+API_KEY = ''
+CLIENT_ID = ''
+CLIENT_SECRET = ''
+SYSTEM_ID = ''
+AUTH_CODE = ''
