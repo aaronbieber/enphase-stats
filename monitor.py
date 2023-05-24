@@ -171,12 +171,19 @@ class EnphaseClient():
             print('Timed out while requesting consumption meter data:', ex)
             return []
 
-        if not 'intervals' in res.json():
-            print('Unexpected response format:', res.json())
+        intervals = []
+        json = {}
+        try:
+            json = res.json()
+        except requests.exceptions.JSONDecodeError:
+            print(f'ERROR: {res.text}')
+            return intervals
+
+        if 'intervals' not in json:
+            print('Unexpected response format:', json)
             return []
 
-        intervals = []
-        for interval in res.json()['intervals']:
+        for interval in json['intervals']:
             if interval['end_at'] > since:
                 intervals.append({
                     'end_at': interval['end_at'],
@@ -209,12 +216,19 @@ class EnphaseClient():
             print('Timed out while requesting production meter data:', ex)
             return []
 
-        if not 'intervals' in res.json():
-            print('Unexpected response format:', res.json())
+        intervals = []
+        json = {}
+        try:
+            json = res.json()
+        except requests.exceptions.JSONDecodeError:
+            print(f'ERROR: {res.text}')
+            return intervals
+
+        if 'intervals' not in json:
+            print('Unexpected response format:', json)
             return []
 
-        intervals = []
-        for interval in res.json()['intervals']:
+        for interval in json['intervals']:
             if interval['end_at'] > since:
                 intervals.append({
                     'end_at': interval['end_at'],
@@ -313,22 +327,27 @@ def main():
     print('Tokens expire on',
           time.strftime('%Y-%m-%d at %H:%M:%S', time.localtime(token_manager.shelf['expire'])))
 
-    print('Last interval ended at',
-          time.strftime('%Y-%m-%d at %H:%M:%S',
-                        time.localtime(cache['last_interval'])),
-          '-', int(time.time()) - cache['last_interval'], '△ second(s).')
-    if ('last_interval' in cache and int(time.time()) - cache['last_interval'] < 900):
-        print('Not ready to request next interval.')
-        sys.exit(0)
+    if 'last_interval' in cache:
+        print('Last interval ended at',
+              time.strftime('%Y-%m-%d at %H:%M:%S',
+                            time.localtime(cache['last_interval'])),
+              '-', int(time.time()) - cache['last_interval'], '△ second(s).')
+
+        if int(time.time()) - cache['last_interval'] < 900:
+            print('Not ready to request next interval.')
+            sys.exit(0)
 
     enphase = EnphaseClient(token_manager)
-    consumption_res = enphase.get_consumption(
-        token_manager.access(), cache['last_interval'])
-    production_res = enphase.get_production(
-        token_manager.access(), cache['last_interval'])
+    consumption_res = enphase.get_consumption(token_manager.access(),
+                                              cache['last_interval'])
+    if len(consumption_res) == 0:
+        print("Couldn't retrieve (or didn't receive) consumption meter data; aborting.")
+        sys.exit(1)
 
-    if len(consumption_res) == 0 or len(production_res) == 0:
-        print("Couldn't retrieve (or didn't receive) meter data; aborting.")
+    production_res = enphase.get_production(token_manager.access(),
+                                            cache['last_interval'])
+    if len(production_res) == 0:
+        print("Couldn't retrieve (or didn't receive) production meter data; aborting.")
         sys.exit(1)
 
     cache['last_interval'] = consumption_res[-1]['end_at']
