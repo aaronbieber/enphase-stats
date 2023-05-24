@@ -16,6 +16,9 @@ import sys
 
 
 class CarbonClient():
+    '''
+    Client to send stats data to Carbon.
+    '''
 
     def __init__(self, host, port):
         '''
