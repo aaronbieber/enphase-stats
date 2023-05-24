@@ -74,15 +74,20 @@ class EnphaseClient():
         print('')
         print('✨✨ Welcome! ✨✨')
         print('')
-        print("It looks like you haven't run this script before. You'll need to authorize the")
-        print('app to retrieve data for your system by completing an OAuth handshake on the')
+        print(
+            "It looks like you haven't run this script before. You'll need to authorize the")
+        print(
+            'app to retrieve data for your system by completing an OAuth handshake on the')
         print('web and recording the resulting client code.')
 
         if len(whisper.CLIENT_ID) == 0:
             print('')
-            print('Before we can continue, you must create a new application in the developer')
-            print('portal at https://developer-v4.enphase.com/ and copy your client ID and')
-            print("client secret into the whisper.py file. After you've done that, run this")
+            print(
+                'Before we can continue, you must create a new application in the developer')
+            print(
+                'portal at https://developer-v4.enphase.com/ and copy your client ID and')
+            print(
+                "client secret into the whisper.py file. After you've done that, run this")
             print('script again.')
             sys.exit(0)
 
@@ -92,8 +97,10 @@ class EnphaseClient():
               f'&client_id={whisper.CLIENT_ID}&redirect_uri={self.redirect_uri}')
         print('')
         print('❗IMPORTANT❗')
-        print('After logging in and authorizing the app to connect to your system, you should')
-        print('be redirected to a simple page displaying the six-character auth code. DO NOT')
+        print(
+            'After logging in and authorizing the app to connect to your system, you should')
+        print(
+            'be redirected to a simple page displaying the six-character auth code. DO NOT')
         print('LOSE THAT CODE. Add it to your whisper.py file.')
         sys.exit(0)
 
