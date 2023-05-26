@@ -1,8 +1,10 @@
 """Retrieve and marshal energy data from Enphase Englighten API."""
+import os
 import sys
 import time
 from datetime import datetime
 from pprint import pprint
+from pprint import pformat
 import base64
 import shelve
 import requests
@@ -119,7 +121,7 @@ class EnphaseClient():
         data = res.json()
 
         if 'error_description' in data:
-            print('Request returned error:', data['error_description'])
+            log('Request returned error:', data['error_description'])
             return False
 
         return {'access': data['access_token'],
@@ -140,7 +142,7 @@ class EnphaseClient():
         data = res.json()
 
         if 'error_description' in data:
-            print('Request returned error:', data['error_description'])
+            log('Request returned error:', data['error_description'])
             return False
 
         return {'access': data['access_token'],
@@ -168,7 +170,7 @@ class EnphaseClient():
                                    'Authorization': f'Bearer {access_token}'},
                                timeout=0.5)
         except TimeoutError as ex:
-            print('Timed out while requesting consumption meter data:', ex)
+            log('Timed out while requesting consumption meter data:', ex)
             return []
 
         intervals = []
@@ -176,11 +178,11 @@ class EnphaseClient():
         try:
             json = res.json()
         except requests.exceptions.JSONDecodeError:
-            print(f'ERROR: {res.text}')
+            log(f'ERROR: {res.text}')
             return intervals
 
         if 'intervals' not in json:
-            print('Unexpected response format:', json)
+            log('Unexpected response format:', json)
             return []
 
         for interval in json['intervals']:
@@ -213,7 +215,7 @@ class EnphaseClient():
                                    'Authorization': f'Bearer {access_token}'},
                                timeout=0.5)
         except TimeoutError as ex:
-            print('Timed out while requesting production meter data:', ex)
+            log('Timed out while requesting production meter data:', ex)
             return []
 
         intervals = []
@@ -221,11 +223,11 @@ class EnphaseClient():
         try:
             json = res.json()
         except requests.exceptions.JSONDecodeError:
-            print(f'ERROR: {res.text}')
+            log(f'ERROR: {res.text}')
             return intervals
 
         if 'intervals' not in json:
-            print('Unexpected response format:', json)
+            log('Unexpected response format:', json)
             return []
 
         for interval in json['intervals']:
@@ -248,7 +250,7 @@ class TokenManager():
         result = self.load()
 
         if result:
-            print('Recalled tokens from file')
+            log('Recalled tokens from file')
         else:
             self.request_tokens()
 
@@ -279,7 +281,7 @@ class TokenManager():
         '''
         Request new tokens from the API.
         '''
-        print('Requesting a new set of tokens...')
+        log('Requesting a new set of tokens...')
         enphase = EnphaseClient(self)
         token_data = enphase.get_tokens()
 
@@ -315,39 +317,56 @@ class TokenManager():
         return ''
 
 
+def log(*messages):
+    """
+    Log a message, if logging is enabled.
+    """
+    if not config.LOGGING:
+        return
+
+    fname = os.path.expanduser(config.LOGFILE)
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    message = ' '.join([ str(m) for m in messages ])
+    log_msg = f'{timestamp} {message}\n'
+    print(log_msg)
+    with open(fname, 'a', encoding="utf-8") as file:
+        file.write(log_msg)
+
+
 def main():
     '''
     The entry point for the program.
     '''
-    print("Starting up...")
+    log('Starting up...')
 
     cache = shelve.open('request_cache')
     token_manager = TokenManager()
 
-    print('Tokens expire on',
-          time.strftime('%Y-%m-%d at %H:%M:%S', time.localtime(token_manager.shelf['expire'])))
+    log('Tokens expire on',
+        time.strftime('%Y-%m-%d at %H:%M:%S',
+                      time.localtime(token_manager.shelf['expire'])))
 
     if 'last_interval' in cache:
-        print('Last interval ended at',
-              time.strftime('%Y-%m-%d at %H:%M:%S',
-                            time.localtime(cache['last_interval'])),
-              '-', int(time.time()) - cache['last_interval'], '△ second(s).')
+        log('Last interval ended at',
+            time.strftime('%Y-%m-%d at %H:%M:%S',
+                          time.localtime(cache['last_interval'])),
+            '-', int(time.time()) - cache['last_interval'], '△ second(s).')
 
         if int(time.time()) - cache['last_interval'] < 900:
-            print('Not ready to request next interval.')
+            log('Not ready to request next interval.')
             sys.exit(0)
 
     enphase = EnphaseClient(token_manager)
     consumption_res = enphase.get_consumption(token_manager.access(),
                                               cache['last_interval'])
     if len(consumption_res) == 0:
-        print("Couldn't retrieve (or didn't receive) consumption meter data; aborting.")
+        log("Couldn't retrieve (or didn't receive) consumption meter data; aborting.")
         sys.exit(1)
 
     production_res = enphase.get_production(token_manager.access(),
                                             cache['last_interval'])
     if len(production_res) == 0:
-        print("Couldn't retrieve (or didn't receive) production meter data; aborting.")
+        log("Couldn't retrieve (or didn't receive) production meter data; aborting.")
         sys.exit(1)
 
     cache['last_interval'] = consumption_res[-1]['end_at']
@@ -364,7 +383,7 @@ def main():
     )
     stats = list(cons_stats) + list(prod_stats)
 
-    pprint(stats)
+    log(pformat(stats))
 
     carbon.send_pickle(stats)
     cache.close()
