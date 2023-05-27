@@ -1,3 +1,5 @@
 """Configuration options"""
 STATS_HOST = '0.0.0.0'
 CARBON_PICKLE_PORT = 2004
+LOGGING = False
+LOGFILE = '~/enlighten.log'
