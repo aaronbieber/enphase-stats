@@ -328,7 +328,7 @@ def log(*messages):
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     message = ' '.join([ str(m) for m in messages ])
     log_msg = f'{timestamp} {message}\n'
-    print(log_msg)
+    print(log_msg, end='')
     with open(fname, 'a', encoding="utf-8") as file:
         file.write(log_msg)
 
